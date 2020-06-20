@@ -1,60 +1,97 @@
-const fs = require('fs-extra')
+// const fs = require('fs-extra')
 const path = require('path')
 const sortArray = require('sort-array')
-const { ulid } = require('ulid')
+const { ulid, decodeTime, encodeTime } = require('ulid')
 const mime = require('mime')
 const { toUnixTime } = require('./dates')
 
-const rootPath = path.join(__dirname, '.data')
+let s3
+
+const bucketName = process.env.BUCKET_NAME || 'timestreams'
+
+if (process.env.AWS_ACCESS_KEY || process.env.LOCAL_STORE) {
+  console.log("-- using local file storage --")
+  const AWS = require('mock-aws-s3')
+  const rootPath = path.join(__dirname, '.data')
+  AWS.config.basePath = rootPath
+  s3 = AWS.S3({
+      params: { Bucket: bucketName }
+  })
+} else {
+  console.log("-- using s3 file storage --")
+  const AWS = require('aws-sdk')
+  const endpoint = new AWS.Endpoint('s3.wasabisys.com');
+  s3 = new AWS.S3({
+    endpoint,
+    params: { Bucket: bucketName }
+  })
+}
+
+const streamStore = {}
+
+function get(id) {
+  let stream = streamStore[id]
+  if (!stream) {
+    stream = new TimeStream(id)
+    streamStore[id] = stream
+  }
+  return stream
+}
 
 
 class TimeStream {
 
   constructor(id) {
     this.id = id
-    fs.ensureDirSync(rootPath)
-  }
-
-  dir() {
-    return path.join(rootPath, this.id)
   }
 
   async exists() {
-    return fs.pathExists(this.dir())
+    // TODO how to tell if the bucket is created? need a special file?
+    const res = await s3.listObjectsV2({ Prefix: `${this.id}/`}).promise()
+    return !!res
   }
 
-  async _files() {
-    const exists = await this.exists()
-    if (!exists) return []
-    const files = await fs.readdir(this.dir())
-    const dir = this.dir()
-    const stats = await Promise.all(files.map(f => fs.stat(path.join(dir, f))))
-    const fileInfo = stats.map((s, i) => {
-      const created = new Date(s.ctime)
+  async _files(prefix='') {
+    let files = []
+    let continuationToken
+    let res
+    do {
+      res = await s3.listObjectsV2({ Prefix: `${this.id}/${prefix}`, ContinuationToken: continuationToken }).promise()
+      files = files.concat(res.Contents)
+      continuationToken = res.ContinuationToken
+    } while (res.IsTruncated)
+    const allFiles = files.map(f => {
+      const name = f.Key.split('/')[1]
+      const created = new Date(decodeTime(name.split('.')[0]))
       return {
-        name: files[i],
-        path: path.join(dir, files[i]),
+        name,
         created,
-        unixTime: toUnixTime(created)
+        unixTime: toUnixTime(created),
+        getStream: async () => {
+          const objectRes = await s3.getObject({ Key: f.Key }).promise()
+          return objectRes.Body
+        }
       }
     })
-    return sortArray(fileInfo, { order: 'desc', by: 't', computed: { t: f => f.created.getTime() }})
+    return sortArray(allFiles, { order: 'desc', by: 't', computed: { t: f => f.created.getTime() }})
   }
 
   async get(date) {
-    const files = await this._files()
+    const files = await this._files(encodeTime(date.getTime()))
     const unixTime = toUnixTime(date)
     return files.find(f => f.unixTime === unixTime)
   }
 
   async save(data, contentType) {
     const ext = mime.getExtension(contentType)
+
     const existingForDate = await this.get(new Date())
     if (existingForDate) throw new Error('Post already exists with this timestamp')
+
     const parts = [ulid()]
     if (ext) parts.push(ext)
     const filename = parts.join('.')
-    await fs.writeFile(path.join(this.dir(), filename), data)
+    const res = await s3.putObject({ Key: `${this.id}/${filename}`, Body: data }).promise()
   }
 
   async fileBefore(date) {
@@ -68,5 +105,13 @@ class TimeStream {
 }
 
 module.exports = {
-  TimeStream
+  TimeStream,
+  get
+}
+
+if (require.main === module) {
+  (async function(){
+    const stream = new TimeStream('K5BXQ5F5PFSNGJ09')
+    console.log("files", await stream._files())
+  })()
 }

@@ -1,7 +1,10 @@
+require('dotenv').config()
+
 const express = require('express')
 const bodyParser = require('body-parser')
+const mime = require('mime')
 const { generateSecret, getStreamID, verify } = require('./auth')
-const { TimeStream } = require('./time-stream')
+const { get } = require('./time-stream')
 const { parseDate } = require('./dates')
 
 const app = express();
@@ -10,10 +13,13 @@ const rawParser = bodyParser.raw({ type: '*/*', limit: '100mb' })
 const textParser = bodyParser.text()
 const jsonParser = bodyParser.json()
 
-function sendStreamFile(res, file) {
+async function sendStreamFile(res, file) {
   if (file) {
     res.set('Date', file.created.toUTCString())
-    res.sendFile(file.path)
+    // res.sendFile(file.path)
+    const body = await file.getStream()
+    res.set('Content-Type', mime.getType(file.name))
+    res.send(body)
   } else {
     res.status(404).send('Not Found')
   }
@@ -22,14 +28,14 @@ function sendStreamFile(res, file) {
 //////////// reading
 
 app.get("/streams/:streamID", async (req, res) => {
-  const stream = new TimeStream(req.params.streamID)
+  const stream = get(req.params.streamID)
   const before = req.query.before ? parseDate(req.query.before) : null
   const file = await stream.fileBefore(before)
   sendStreamFile(res, file)
 })
 
 app.get("/streams/:streamID/:time", async (req, res) => {
-  const stream = new TimeStream(req.params.streamID)
+  const stream = get(req.params.streamID)
   const time = parseDate(req.params.time)
   const file = await stream.get(time)
   sendStreamFile(res, file)
@@ -49,7 +55,7 @@ function streamAuthorization(req, res, next) {
 }
 
 app.post("/streams/:streamID", streamAuthorization, jsonParser, textParser, rawParser, async (req, res, next) => {
-  const stream = new TimeStream(req.params.streamID)
+  const stream = get(req.params.streamID)
   if (JSON.stringify(req.body) === '{}') {
     res.status(400).send(`Bad request body and/or content type (${req.headers['content-type']})`)
     return
