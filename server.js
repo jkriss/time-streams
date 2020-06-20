@@ -1,9 +1,4 @@
-// server.js
-// where your node app starts
-
-// we've started you off with Express (https://expressjs.com/)
-// but feel free to use whatever libraries or frameworks you'd like through `package.json`.
-const express = require("express");
+const express = require('express')
 const bodyParser = require('body-parser')
 const { generateSecret, getStreamID, verify } = require('./auth')
 const { TimeStream } = require('./time-stream')
@@ -11,7 +6,7 @@ const { parseDate } = require('./dates')
 
 const app = express();
 
-const rawParser = bodyParser.raw()
+const rawParser = bodyParser.raw({ type: '*/*', limit: '100mb' })
 const textParser = bodyParser.text()
 const jsonParser = bodyParser.json()
 
@@ -55,7 +50,15 @@ function streamAuthorization(req, res, next) {
 
 app.post("/streams/:streamID", streamAuthorization, jsonParser, textParser, rawParser, async (req, res, next) => {
   const stream = new TimeStream(req.params.streamID)
-  await stream.save(req.body, req.headers['content-type'])
+  if (JSON.stringify(req.body) === '{}') {
+    res.status(400).send(`Bad request body and/or content type (${req.headers['content-type']})`)
+    return
+  }
+  try {
+    await stream.save(req.body, req.headers['content-type'])
+  } catch (err) {
+    return next(err)
+  }
   return res.send('Ok')
 })
 

@@ -1,7 +1,7 @@
 const fs = require('fs-extra')
 const path = require('path')
 const sortArray = require('sort-array')
-const { ulid } = require("ulid")
+const { ulid } = require('ulid')
 const mime = require('mime')
 const { toUnixTime } = require('./dates')
 
@@ -44,8 +44,6 @@ class TimeStream {
   async get(date) {
     const files = await this._files()
     const unixTime = toUnixTime(date)
-    console.log("time:", unixTime)
-    console.log("files:", files)
     return files.find(f => f.unixTime === unixTime)
   }
 
