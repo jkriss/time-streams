@@ -20,7 +20,10 @@ if (process.env.AWS_ACCESS_KEY || process.env.LOCAL_STORE) {
 } else {
   console.log("-- using s3 file storage --")
   const AWS = require('aws-sdk')
-  const endpoint = new AWS.Endpoint('s3.wasabisys.com');
+  let endpoint
+  if (process.env.S3_ENDPOINT) {
+    endpoint = new AWS.Endpoint(process.env.S3_ENDPOINT)
+  }
   s3 = new AWS.S3({
     endpoint,
     params: { Bucket: bucketName }
