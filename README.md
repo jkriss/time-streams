@@ -12,7 +12,6 @@ This is a partial implementation. Check out the [API draft](https://docs.google.
 
 Try this out:
 
-    mkdir -p .data/timestreams/K5BXQ5F5PFSNGJ09
     yarn dev
 
 Then in another shell:
@@ -20,6 +19,11 @@ Then in another shell:
     curl -X POST -H "Authorization: Bearer 01EB834HQFB14K81NR01DXPXZP" -H "Content-Type: text/plain" --data "hi from curl" http://localhost:3333/streams/K5BXQ5F5PFSNGJ09
 
 Now open http://localhost:3333/streams/K5BXQ5F5PFSNGJ09 in your browser.
+
+To post to another stream, try: 01EBAEG102H1ZPZPQP8SCX49CP
+
+    curl -X POST -H "Authorization: Bearer 01EBAEG102H1ZPZPQP8SCX49CP" -H "Content-Type: text/plain" --data "hi on another stream" http://localhost:3333/streams/915DG1959Q4G62WM
+
 
 ## Remote storage
 

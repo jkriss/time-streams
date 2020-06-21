@@ -27,3 +27,9 @@ module.exports = {
   getStreamID,
   verify
 }
+
+if (require.main === module) {
+  const secret = generateSecret()
+  const streamID = getStreamID(secret)
+  console.log(secret, '->', streamID)
+}

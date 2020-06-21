@@ -1,13 +1,19 @@
 require('dotenv').config()
 
 const express = require('express')
+const cors = require('cors')
 const bodyParser = require('body-parser')
 const mime = require('mime')
 const { generateSecret, getStreamID, verify } = require('./auth')
 const { get } = require('./time-stream')
 const { parseDate } = require('./dates')
 
-const app = express();
+const app = express()
+
+app.use(cors({
+  allowedHeaders: ['Authorization'],
+  exposedHeaders: ['Date']
+}))
 
 const rawParser = bodyParser.raw({ type: '*/*', limit: '100mb' })
 const textParser = bodyParser.text()
@@ -17,9 +23,15 @@ async function sendStreamFile(res, file) {
   if (file) {
     res.set('Date', file.created.toUTCString())
     // res.sendFile(file.path)
-    const body = await file.getStream()
-    res.set('Content-Type', mime.getType(file.name))
-    res.send(body)
+    const url = await file.getURL()
+    if (url) {
+      res.redirect(url)
+    } else {
+      const body = await file.getStream()
+      res.set('Content-Type', mime.getType(file.name))
+      res.send(body)
+    }
+
   } else {
     res.status(404).send('Not Found')
   }
@@ -61,7 +73,8 @@ app.post("/streams/:streamID", streamAuthorization, jsonParser, textParser, rawP
     return
   }
   try {
-    await stream.save(req.body, req.headers['content-type'])
+    const body = typeof req.body === 'object' ? JSON.stringify(req.body) : req.body
+    await stream.save(body, req.headers['content-type'])
   } catch (err) {
     return next(err)
   }

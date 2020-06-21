@@ -9,7 +9,9 @@ let s3
 
 const bucketName = process.env.BUCKET_NAME || 'timestreams'
 
-if (process.env.AWS_ACCESS_KEY || process.env.LOCAL_STORE) {
+const useLocalStore = process.env.AWS_ACCESS_KEY || process.env.LOCAL_STORE
+
+if (useLocalStore) {
   console.log("-- using local file storage --")
   const AWS = require('mock-aws-s3')
   const rootPath = path.join(__dirname, '.data')
@@ -73,6 +75,12 @@ class TimeStream {
         getStream: async () => {
           const objectRes = await s3.getObject({ Key: f.Key }).promise()
           return objectRes.Body
+        },
+        getURL: async () => {
+          // mock s3 returns a real aws url, so don't do that
+          if (useLocalStore) return null
+          const url = s3.getSignedUrl('getObject', { Key: f.Key })
+          return url
         }
       }
     })
@@ -94,7 +102,11 @@ class TimeStream {
     const parts = [ulid()]
     if (ext) parts.push(ext)
     const filename = parts.join('.')
-    const res = await s3.putObject({ Key: `${this.id}/${filename}`, Body: data }).promise()
+    const res = await s3.putObject({
+      Key: `${this.id}/${filename}`,
+      Body: data,
+      ContentType: contentType
+    }).promise()
   }
 
   async fileBefore(date) {
