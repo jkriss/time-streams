@@ -13,7 +13,11 @@
   "dependencies": {
     "base32.js": "^0.1.0",
     "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dayjs": "^1.8.28",
+    "etag": "^1.8.1",
     "express": "^4.17.1",
+    "fast-glob": "^3.2.4",
     "fs-extra": "^9.0.1",
     "mime": "^2.4.6",
     "sort-array": "^4.1.1",
