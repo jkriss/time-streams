@@ -1,5 +1,6 @@
 const fs = require('fs-extra')
 const path = require('path')
+const { ulid, decodeTime } = require('ulid')
 const sortArray = require('sort-array')
 const mime = require('mime')
 const dayjs = require('dayjs')
@@ -9,10 +10,6 @@ const etag = require('etag')
 const defaultRootPath = '.data'
 
 const prefixFormat = 'YYYY/MM/DD'
-
-function toUnixTime(date) {
-  return Math.floor(date.getTime() / 1000)
-}
 
 class FileTimeStore {
 
@@ -27,33 +24,29 @@ class FileTimeStore {
     return path.join(this.rootPath, this.id, dayjs(date).format(prefixFormat))
   }
 
-  prefixForTime(unixTime) {
-    return path.join(this.pathForDate(new Date(unixTime*1000)), unixTime.toString())
-  }
-
   async save({ body, contentType, date, overwrite }) {
     if (!date) date = new Date()
-    const unixTime = toUnixTime(date)
-    const name = unixTime.toString()
+    const name = ulid(date.getTime())
     let filepath = path.join(this.pathForDate(date), name)
     const ext = mime.getExtension(contentType)
     if (ext) filepath += '.' + ext
-    const existingFile = await this.get(unixTime)
-    if (existingFile && !overwrite) throw new Error('File already exists for this unix time')
     await fs.ensureDir(path.dirname(filepath))
     await fs.writeFile(filepath, body)
   }
 
-  async get(unixTime) {
+  async get(id) {
     const streamExists = await fs.pathExists(this.streamPath)
     if (!streamExists) return null
-    const prefix = this.prefixForTime(unixTime)
-    const paths = await fg([prefix+'.*'])
+    const pathPrefix = this.pathForDate(new Date(decodeTime(id)))
+    const paths = await fg([path.join(pathPrefix, id+'*')])
     if (paths[0]) {
       const [name, ext] = path.basename(paths[0]).split('.')
       const stat = await fs.stat(paths[0])
       return {
-        date: new Date(parseInt(name)*1000),
+        date: new Date(decodeTime(name)),
+        id,
+        pathname: `${this.id}/${id}`,
+        // pathname: id,
         contentType: ext ? mime.getType(ext) : undefined,
         etag: etag(stat),
         getStream: () => {
@@ -66,8 +59,33 @@ class FileTimeStore {
     }
   }
 
-  async del(unixTime) {
-    const existing = await this.get(unixTime)
+  async getPrevious(id) {
+    // check in the same dir for the next file
+    // if this is the first file in the dir, then look up the the before this one
+    const streamExists = await fs.pathExists(this.streamPath)
+    if (!streamExists) return null
+    const prefix = this.pathForDate(new Date(decodeTime(id)))
+    const posts = await fg([prefix+'/*']).then(p => p.sort().reverse())
+    let post
+    if (posts.length > 1) {
+      for (const i in posts) {
+        if (posts[i].includes(id)) {
+          const postName = posts[parseInt(i)+1]
+          if (postName) {
+            const postId = path.basename(postName).split('.')[0]
+            return this.get(postId)
+          }
+        }
+      }
+    }
+    if (!post) {
+      post = await this.before(new Date(decodeTime(id)))
+    }
+    return post
+  }
+
+  async del(id) {
+    const existing = await this.get(id)
     if (existing) {
       await fs.unlink(existing._.filename)
       return true
@@ -75,9 +93,8 @@ class FileTimeStore {
     return false
   }
 
-  async before(unixTime) {
-    if (!unixTime) unixTime = toUnixTime(new Date())
-    const date = new Date(unixTime*1000)
+  async before(date) {
+    if (!date) date = new Date()
     let day = dayjs(date)
     // see which years we have data for
     const streamExists = await fs.pathExists(this.streamPath)
@@ -93,8 +110,9 @@ class FileTimeStore {
         const paths = await fg([prefix+'/*']).then(p => p.sort().reverse())
         // return the first one that's before the given date
         for (const p of paths) {
-          const t = parseInt(path.basename(p).split('.')[0])
-          if (t < unixTime) return this.get(t)
+          const name = path.basename(p).split('.')[0]
+          const t = decodeTime(name)
+          if (t < date.getTime()) return this.get(name)
         }
       }
       day = day.subtract(1, 'day')
@@ -107,11 +125,8 @@ if (require.main === module) {
 
     const s = new FileTimeStore('example-stream')
     const date = new Date('2020-01-01')
-    const unixTime = toUnixTime(date)
-    console.log("unix time:", unixTime)
-    await s.del(unixTime)
     await s.save({ body: 'hello!', contentType: 'text/plain', date })
-    const f = await s.get(unixTime)
+    const f = await s.before(new Date('2020-01-02'))
     console.log("saved", f)
     f.getStream().pipe(process.stdout)
   })()

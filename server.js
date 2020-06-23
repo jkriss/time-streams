@@ -1,26 +1,42 @@
 const express = require('express')
 const cors = require('cors')
 const bodyParser = require('body-parser')
+const LinkHeader = require('http-link-header')
 const { generateSecret, getStreamID, verify } = require('./auth')
 const Store = require('./stores/file-store')
-const { parseDate, toUnixTime } = require('./dates')
 
 const app = express()
 
 app.use(cors({
   allowedHeaders: ['Authorization', 'If-None-Match'],
-  exposedHeaders: ['Date']
+  exposedHeaders: ['Date', 'Link']
 }))
 
 const rawParser = bodyParser.raw({ type: '*/*', limit: '100mb' })
 const textParser = bodyParser.text()
 const jsonParser = bodyParser.json()
 
-function sendStreamFile(req, res, file) {
+async function sendStreamFile(req, res, file, stream) {
   if (file) {
     res.set('Date', file.date.toUTCString())
     res.set('Content-Type', file.contentType)
     if (file.etag) res.set('ETag', file.etag)
+
+    const previousFile = await stream.getPrevious(file.id)
+
+    var link = new LinkHeader()
+    link.set({
+      rel: 'self',
+      uri: file.pathname
+    })
+    if (previousFile) {
+      link.set({
+        rel: 'previous',
+        uri: previousFile.pathname
+      })
+    }
+    res.set('Link', link.toString())
+
     if (req.get('If-None-Match') && req.get('if-none-match') === file.etag) {
       return res.status(304).send()
     }
@@ -32,20 +48,24 @@ function sendStreamFile(req, res, file) {
   }
 }
 
+function parseDate(val) {
+  if (!val) return undefined
+  if (val.match(/^\d+$/)) val = parseInt(val)
+  return new Date(val)
+}
+
 //////////// reading
 
 app.get("/streams/:streamID", async (req, res) => {
   const stream = new Store(req.params.streamID)
-  const before = req.query.before ? toUnixTime(parseDate(req.query.before)) : null
-  const file = await stream.before(before)
-  sendStreamFile(req, res, file)
+  const file = await stream.before(parseDate(req.query['ts.before']))
+  sendStreamFile(req, res, file, stream)
 })
 
-app.get("/streams/:streamID/:time", async (req, res) => {
+app.get("/streams/:streamID/:id", async (req, res) => {
   const stream = new Store(req.params.streamID)
-  const date = parseDate(req.params.time)
-  const file = await stream.get(toUnixTime(date))
-  sendStreamFile(req, res, file)
+  const file = await stream.get(req.params.id)
+  sendStreamFile(req, res, file, stream)
 })
 
 //////////// posting

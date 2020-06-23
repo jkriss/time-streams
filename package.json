@@ -19,6 +19,7 @@
     "express": "^4.17.1",
     "fast-glob": "^3.2.4",
     "fs-extra": "^9.0.1",
+    "http-link-header": "^1.0.2",
     "mime": "^2.4.6",
     "sort-array": "^4.1.1",
     "ulid": "^2.3.0"
