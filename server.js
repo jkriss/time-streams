@@ -27,12 +27,12 @@ async function sendStreamFile(req, res, file, stream) {
     var link = new LinkHeader()
     link.set({
       rel: 'self',
-      uri: file.pathname
+      uri: `/streams/${file.pathname}`
     })
     if (previousFile) {
       link.set({
         rel: 'previous',
-        uri: previousFile.pathname
+        uri: `/streams/${previousFile.pathname}`
       })
     }
     res.set('Link', link.toString())
