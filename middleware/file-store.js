@@ -8,6 +8,30 @@ const fg = require('fast-glob')
 const etag = require('etag')
 
 const prefixFormat = 'YYYY/MM/DD'
+const dateIdFormat = 'YYYY-MM-DD'
+
+function dateFromId(id) {
+  let date
+  try {
+    date = new Date(decodeTime(id))
+  } catch (err) {
+    const idx = id.indexOf(':')
+    const dateStr = id.slice(0,idx)
+    const name = id.slice(idx+1)
+    id = name
+    date = dayjs(dateStr, dateIdFormat).toDate()
+  }
+  return { date, id }
+}
+
+function maybePrefixId(id, date) {
+  try {
+    decodeTime(id)
+    return id
+  } catch (err) {
+    return dayjs(date).format(dateIdFormat) + ':' + id
+  }
+}
 
 class FileTimeStore {
 
@@ -33,16 +57,18 @@ class FileTimeStore {
   async get(id) {
     const streamExists = await fs.pathExists(this.streamPath)
     if (!streamExists) return null
-    const pathPrefix = this.pathForDate(new Date(decodeTime(id)))
-    const paths = await fg([path.join(pathPrefix, id+'*')])
+    const d = dateFromId(id)
+    const { date } = d
+    const strippedId = d.id
+    const pathPrefix = this.pathForDate(date)
+    const paths = await fg([path.join(pathPrefix, strippedId+'*')])
     if (paths[0]) {
       const [name, ext] = path.basename(paths[0]).split('.')
       const stat = await fs.stat(paths[0])
       return {
-        date: new Date(decodeTime(name)),
+        date,
         id,
         pathname: `${this.root}/${id}`,
-        // pathname: id,
         contentType: ext ? mime.getType(ext) : undefined,
         etag: etag(stat),
         getStream: () => {
@@ -60,22 +86,25 @@ class FileTimeStore {
     // if this is the first file in the dir, then look up the the before this one
     const streamExists = await fs.pathExists(this.streamPath)
     if (!streamExists) return null
-    const prefix = this.pathForDate(new Date(decodeTime(id)))
+    const d = dateFromId(id)
+    const { date } = d
+    const strippedId = d.id
+    const prefix = this.pathForDate(date)
     const posts = await fg([prefix+'/*']).then(p => p.sort().reverse())
     let post
     if (posts.length > 1) {
       for (const i in posts) {
-        if (posts[i].includes(id)) {
+        if (posts[i].includes(strippedId)) {
           const postName = posts[parseInt(i)+1]
           if (postName) {
             const postId = path.basename(postName).split('.')[0]
-            return this.get(postId)
+            return this.get(maybePrefixId(postId, date))
           }
         }
       }
     }
     if (!post) {
-      post = await this.before(new Date(decodeTime(id)))
+      post = await this.before(date)
     }
     return post
   }
@@ -106,8 +135,16 @@ class FileTimeStore {
         const paths = await fg([prefix+'/*']).then(p => p.sort().reverse())
         // return the first one that's before the given date
         for (const p of paths) {
-          const name = path.basename(p).split('.')[0]
-          const t = decodeTime(name)
+          let name = path.basename(p).split('.')[0]
+          let t
+          try {
+            t = decodeTime(name)
+          } catch (err) {
+            // failed to get the file time from the filename, just use the directory day
+            const dirDate = dayjs(day.format(prefixFormat), prefixFormat)
+            t = dirDate.valueOf()
+            name = maybePrefixId(name, dirDate)
+          }
           if (t < date.getTime()) return this.get(name)
         }
       }
