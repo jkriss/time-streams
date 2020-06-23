@@ -1,9 +1,9 @@
-const crypto = require("crypto");
-const { ulid } = require("ulid");
-const base32 = require("base32.js");
+const crypto = require('crypto')
+const { ulid } = require('ulid')
+const base32 = require('base32.js')
 
 function generateSecret() {
-  return ulid();
+  return ulid()
 }
 
 function getStreamID(secret) {

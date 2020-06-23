@@ -7,21 +7,17 @@ const dayjs = require('dayjs')
 const fg = require('fast-glob')
 const etag = require('etag')
 
-const defaultRootPath = '.data'
-
 const prefixFormat = 'YYYY/MM/DD'
 
 class FileTimeStore {
 
-  constructor(id, { rootPath }={}) {
-    this.id = id
-    this.rootPath = rootPath || defaultRootPath
-    this.streamPath = path.join(this.rootPath, this.id)
-    fs.ensureDirSync(this.rootPath)
+  constructor(root) {
+    this.root = root
+    this.streamPath = path.join(this.root+'.timestream')
   }
 
   pathForDate(date) {
-    return path.join(this.rootPath, this.id, dayjs(date).format(prefixFormat))
+    return path.join(this.streamPath, dayjs(date).format(prefixFormat))
   }
 
   async save({ body, contentType, date, overwrite }) {
@@ -45,7 +41,7 @@ class FileTimeStore {
       return {
         date: new Date(decodeTime(name)),
         id,
-        pathname: `${this.id}/${id}`,
+        pathname: `${this.root}/${id}`,
         // pathname: id,
         contentType: ext ? mime.getType(ext) : undefined,
         etag: etag(stat),

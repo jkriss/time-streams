@@ -12,7 +12,7 @@ This is a partial implementation. Check out the [API draft](https://docs.google.
 
 Try this out:
 
-    mkdir -p .data/K5BXQ5F5PFSNGJ09
+    mkdir -p public/K5BXQ5F5PFSNGJ09.timestream
     yarn dev
 
 Then in another shell:
