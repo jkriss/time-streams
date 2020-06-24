@@ -1,9 +1,11 @@
 const URL = require('url')
+const path = require('path')
 const express = require('express')
 const bodyParser = require('body-parser')
 const { findStream } = require('./shared')
+const Store = require('../file-store')
 
-function writerMiddleware(basePath, { maxFileSize }={}) {
+function writerMiddleware(basePath, { maxFileSize, createIfMissing }={}) {
 
   const router = express.Router()
 
@@ -16,7 +18,13 @@ function writerMiddleware(basePath, { maxFileSize }={}) {
   router.use(async (req, res, next) => {
     if (req.method !== 'POST') return next()
     const url = URL.parse(req.url)
-    const { stream, streamID } = await findStream(basePath, url, req)
+    let { stream, streamID } = await findStream(basePath, url, req)
+
+    if (!stream && createIfMissing) {
+      streamID = path.basename(url.pathname)
+      stream = new Store(path.join(basePath, streamID))
+    }
+
     if (stream) {
       if (JSON.stringify(req.body) === '{}') {
         res.status(400).send(`Bad request body and/or content type (${req.headers['content-type']})`)

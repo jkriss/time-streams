@@ -10,13 +10,12 @@ This is a partial implementation. Check out the [API draft](https://docs.google.
 
 ## Example
 
-Try this out:
+Start the server:
 
-    mkdir -p public/K5BXQ5F5PFSNGJ09.timestream
     yarn dev
 
 Then in another shell:
 
-    curl -X POST -H "Content-Type: text/plain" --data "hi from curl" http://localhost:3333/streams/K5BXQ5F5PFSNGJ09
+    curl -X POST -H "Authorization: Bearer devsekrit" -H "Content-Type: text/plain" --data "hi from curl" http://localhost:3333/posts
 
-Now open http://localhost:3333/streams/K5BXQ5F5PFSNGJ09 in your browser.
+Now open http://localhost:3333/posts in your browser.

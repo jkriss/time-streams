@@ -7,7 +7,7 @@
   "description": "A simple Node app built on Express, instantly up and running.",
   "main": "server.js",
   "scripts": {
-    "dev": "PORT=3333 nodemon src/server.js",
+    "dev": "PORT=3333 TIME_STREAM_SECRET=devsekrit nodemon src/server.js",
     "start": "node src/server.js"
   },
   "dependencies": {
@@ -15,6 +15,7 @@
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dayjs": "^1.8.28",
+    "dotenv": "^8.2.0",
     "etag": "^1.8.1",
     "express": "^4.17.1",
     "fast-glob": "^3.2.4",
