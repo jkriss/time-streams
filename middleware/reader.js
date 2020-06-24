@@ -5,13 +5,15 @@ const express = require('express')
 const cors = require('cors')
 const { findStream } = require('./shared')
 
+const TIME_STREAM_VERSION = '1'
+
 function readerMiddleware(basePath) {
 
   const router = express.Router()
 
   router.use(cors({
     allowedHeaders: ['Authorization', 'If-None-Match'],
-    exposedHeaders: ['Date', 'Link']
+    exposedHeaders: ['Date', 'Link', 'Time-Stream-Version']
   }))
 
 
@@ -45,6 +47,7 @@ async function sendStreamFile(req, res, file, stream) {
   if (file) {
     res.set('Date', file.date.toUTCString())
     res.set('Content-Type', file.contentType)
+    res.set('Time-Stream-Version', TIME_STREAM_VERSION)
     if (file.etag) res.set('ETag', file.etag)
 
     const previousFile = await stream.getPrevious(file.id)
