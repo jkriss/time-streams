@@ -1,10 +1,10 @@
 {
   "name": "time-streams",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Time-aware feeds on any url",
   "license": "MIT",
   "author": "Jesse Kriss <jesse@jklabs.net>",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "dev": "PORT=3333 TIME_STREAM_SECRET=devsekrit nodemon example/server.js"
   },

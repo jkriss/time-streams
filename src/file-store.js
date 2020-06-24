@@ -3,8 +3,11 @@ const path = require('path')
 const { ulid, decodeTime } = require('ulid')
 const mime = require('mime')
 const dayjs = require('dayjs')
+const utc = require('dayjs/plugin/utc')
 const fg = require('fast-glob')
 const etag = require('etag')
+
+dayjs.extend(utc)
 
 const prefixFormat = 'YYYY/MM/DD'
 const dateIdFormat = 'YYYY-MM-DD'
@@ -40,7 +43,7 @@ class FileTimeStore {
   }
 
   pathForDate(date) {
-    return path.join(this.streamPath, dayjs(date).format(prefixFormat))
+    return path.join(this.streamPath, dayjs(date).utc().format(prefixFormat))
   }
 
   async save({ body, contentType, date, overwrite }) {
