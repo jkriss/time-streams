@@ -5,7 +5,7 @@ const express = require('express')
 const cors = require('cors')
 const { findStream } = require('./shared')
 
-const TIME_STREAM_VERSION = '1'
+const TIME_STREAMS_VERSION = '1'
 
 function readerMiddleware(basePath) {
 
@@ -53,7 +53,7 @@ async function sendStreamFile(req, res, file, stream) {
     if (file.lastModified) {
       res.set('Last-Modified', file.lastModified.toUTCString())
     }
-    res.set('Time-Stream-Version', TIME_STREAM_VERSION)
+    res.set('Time-Streams-Version', TIME_STREAMS_VERSION)
     if (file.etag) res.set('ETag', file.etag)
 
     const previousFile = await stream.getPrevious(file.id)
