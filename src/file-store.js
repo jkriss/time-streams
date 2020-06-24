@@ -73,6 +73,8 @@ class FileTimeStore {
         pathname: `${this.root}/${id}`,
         contentType: ext ? mime.getType(ext) : undefined,
         etag: etag(stat),
+        contentLength: stat.size,
+        lastModified: new Date(stat.mtimeMs),
         getStream: () => {
           return fs.createReadStream(paths[0])
         },

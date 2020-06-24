@@ -13,7 +13,7 @@ function readerMiddleware(basePath) {
 
   router.use(cors({
     allowedHeaders: ['Authorization', 'If-None-Match'],
-    exposedHeaders: ['Date', 'Link', 'Time-Stream-Version']
+    exposedHeaders: ['Link', 'Time-Streams-Version', 'Post-Time']
   }))
 
 
@@ -45,8 +45,14 @@ function readerMiddleware(basePath) {
 
 async function sendStreamFile(req, res, file, stream) {
   if (file) {
-    res.set('Date', file.date.toUTCString())
     res.set('Content-Type', file.contentType)
+    res.set('Post-Time', file.date.toUTCString())
+    if (file.contentLength) {
+      res.set('Content-Length', file.contentLength)
+    }
+    if (file.lastModified) {
+      res.set('Last-Modified', file.lastModified.toUTCString())
+    }
     res.set('Time-Stream-Version', TIME_STREAM_VERSION)
     if (file.etag) res.set('ETag', file.etag)
 
