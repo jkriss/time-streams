@@ -1,6 +1,6 @@
 const fs = require('fs-extra')
 const path = require('path')
-const Store = require('./file-store')
+const Store = require('../file-store')
 
 const SUFFIX = '.timestream'
 

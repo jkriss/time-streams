@@ -3,11 +3,13 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const { findStream } = require('./shared')
 
-function writerMiddleware(basePath) {
+function writerMiddleware(basePath, { maxFileSize }={}) {
 
   const router = express.Router()
 
-  router.use(bodyParser.raw({ type: '*/*', limit: '100mb' }))
+  if (!maxFileSize) maxFileSize = '100mb'
+
+  router.use(bodyParser.raw({ type: '*/*', limit: maxFileSize }))
   router.use(bodyParser.text())
   router.use(bodyParser.json())
 

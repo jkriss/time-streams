@@ -7,8 +7,8 @@
   "description": "A simple Node app built on Express, instantly up and running.",
   "main": "server.js",
   "scripts": {
-    "dev": "PORT=3333 nodemon server.js",
-    "start": "node server.js"
+    "dev": "PORT=3333 nodemon src/server.js",
+    "start": "node src/server.js"
   },
   "dependencies": {
     "base32.js": "^0.1.0",
