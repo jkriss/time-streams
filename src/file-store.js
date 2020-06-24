@@ -1,7 +1,6 @@
 const fs = require('fs-extra')
 const path = require('path')
 const { ulid, decodeTime } = require('ulid')
-const sortArray = require('sort-array')
 const mime = require('mime')
 const dayjs = require('dayjs')
 const fg = require('fast-glob')

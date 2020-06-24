@@ -1,8 +1,5 @@
-require('dotenv').config()
-
 const express = require('express')
-const reader = require('./middleware/reader')
-const writer = require('./middleware/writer')
+const { reader, writer } = require('../src/index')
 
 const app = express()
 

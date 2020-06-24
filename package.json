@@ -1,43 +1,30 @@
 {
-  "//1": "describes your app and its dependencies",
-  "//2": "https://docs.npmjs.com/files/package.json",
-  "//3": "updating this file will download and update your packages",
-  "name": "hello-express",
+  "name": "time-streams",
   "version": "0.0.1",
-  "description": "A simple Node app built on Express, instantly up and running.",
-  "main": "server.js",
+  "description": "Time-aware feeds on any url",
+  "license": "MIT",
+  "author": "Jesse Kriss <jesse@jklabs.net>",
+  "main": "index.js",
   "scripts": {
-    "dev": "PORT=3333 TIME_STREAM_SECRET=devsekrit nodemon src/server.js",
-    "start": "node src/server.js"
+    "dev": "PORT=3333 TIME_STREAM_SECRET=devsekrit nodemon example/server.js"
   },
   "dependencies": {
     "base32.js": "^0.1.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "dayjs": "^1.8.28",
-    "dotenv": "^8.2.0",
     "etag": "^1.8.1",
-    "express": "^4.17.1",
     "fast-glob": "^3.2.4",
     "fs-extra": "^9.0.1",
     "http-link-header": "^1.0.2",
     "mime": "^2.4.6",
-    "sort-array": "^4.1.1",
     "ulid": "^2.3.0"
   },
   "engines": {
     "node": "12.x"
   },
-  "repository": {
-    "url": "https://glitch.com/edit/#!/hello-express"
-  },
-  "license": "MIT",
-  "keywords": [
-    "node",
-    "glitch",
-    "express"
-  ],
   "devDependencies": {
+    "express": "^4.17.1",
     "nodemon": "^2.0.4"
   }
 }
