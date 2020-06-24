@@ -17,6 +17,6 @@ Try this out:
 
 Then in another shell:
 
-    curl -X POST -H "Authorization: Bearer 01EB834HQFB14K81NR01DXPXZP" -H "Content-Type: text/plain" --data "hi from curl" http://localhost:3333/streams/K5BXQ5F5PFSNGJ09
+    curl -X POST -H "Content-Type: text/plain" --data "hi from curl" http://localhost:3333/streams/K5BXQ5F5PFSNGJ09
 
 Now open http://localhost:3333/streams/K5BXQ5F5PFSNGJ09 in your browser.
