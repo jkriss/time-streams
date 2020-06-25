@@ -29,7 +29,7 @@ function readerMiddleware(basePath) {
       } else {
         post = await stream.before(parseDate(qs['before']))
       }
-      req._timestreamBasePath = basePath
+      req._timestreamBasePath = basePath === '.' ? '' : basePath
       if (post) {
         sendStreamFile(req, res, post, stream)
       } else {

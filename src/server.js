@@ -1,9 +1,12 @@
 const express = require('express')
+const compression = require('compression')
 const { reader, writer } = require('../src/index')
+
+const webroot = process.env.ROOT_DIR || '.'
 
 const app = express()
 
-const webroot = process.env.ROOT_DIR || '.'
+app.use(compression())
 
 // everybody can read
 app.use(reader(webroot))
