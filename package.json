@@ -1,6 +1,6 @@
 {
   "name": "time-streams",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Time-aware feeds on any url",
   "license": "MIT",
   "author": "Jesse Kriss <jesse@jklabs.net>",
@@ -14,6 +14,7 @@
     "cors": "^2.8.5",
     "dayjs": "^1.8.28",
     "etag": "^1.8.1",
+    "express": "^4.17.1",
     "fast-glob": "^3.2.4",
     "fs-extra": "^9.0.1",
     "http-link-header": "^1.0.2",
@@ -24,7 +25,6 @@
     "node": "12.x"
   },
   "devDependencies": {
-    "express": "^4.17.1",
     "nodemon": "^2.0.4"
   }
 }
