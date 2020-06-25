@@ -201,7 +201,7 @@ class FileStore {
       for (const i in posts) {
         if (posts[i].startsWith(fullPrefixPath)) {
           const previousPostPath = posts[parseInt(i)+1]
-          return this.getPath(previousPostPath)
+          if (previousPostPath) return this.getPath(previousPostPath)
         }
       }
     }
