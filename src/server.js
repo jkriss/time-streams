@@ -3,7 +3,7 @@ const { reader, writer } = require('../src/index')
 
 const app = express()
 
-const webroot = 'public'
+const webroot = process.env.ROOT_DIR || '.'
 
 // everybody can read
 app.use(reader(webroot))

@@ -27,7 +27,7 @@ function readerMiddleware(basePath) {
       if (id) {
         post = await stream.get(id)
       } else {
-        post = await stream.before(parseDate(qs['ts.before']))
+        post = await stream.before(parseDate(qs['before']))
       }
       req._timestreamBasePath = basePath
       if (post) {

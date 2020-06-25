@@ -174,7 +174,7 @@ class FileStore {
         const paths = await fg([prefix+'/*']).then(p => p.sort().reverse())
         // return the first one that's before the given date
         for (const p of paths) {
-          const postMeta = nameAndDateFromTimePath(p)
+          const postMeta = nameAndDateFromTimePath(p.slice(this.streamPath.length))
           const t = postMeta.date.getTime()
           if (t < date.getTime()) return this.getPath(p)
         }
