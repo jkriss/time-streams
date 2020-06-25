@@ -1,12 +1,12 @@
 {
   "name": "time-streams",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Time-aware feeds on any url",
   "license": "MIT",
   "author": "Jesse Kriss <jesse@jklabs.net>",
   "main": "src/index.js",
   "bin": {
-    "timestream-server": "bin/server"
+    "timestream-server": "bin/server.js"
   },
   "scripts": {
     "dev": "PORT=3333 TIME_STREAM_SECRET=devsekrit ROOT_DIR=public nodemon src/server.js"
