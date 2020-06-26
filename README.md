@@ -22,47 +22,52 @@ Now open http://localhost:3333/posts in your browser.
 
 You can mount the reader and writer middleware independently.
 
-    const express = require('express')
-    const { reader, writer } = require('time-streams')
+```javascript
+const express = require('express')
+const { reader, writer } = require('time-streams')
 
-    const app = express()
-    const webroot = 'public'
+const app = express()
+const webroot = 'public'
 
-    app.use(reader(webroot))
-    app.use(writer(webroot, { createIfMissing: true }))
+app.use(reader(webroot))
+app.use(writer(webroot, { createIfMissing: true }))
 
-    // serve regular files, too
-    app.use(express.static(webroot))
+// serve regular files, too
+app.use(express.static(webroot))
 
-    const listener = app.listen(process.env.PORT, () => {
-      console.log("Listening at http://localhost:" + listener.address().port)
-    })
+const listener = app.listen(process.env.PORT, () => {
+  console.log("Listening at http://localhost:" + listener.address().port)
+})
+```
 
 In practice, you'll likely want to protect writes somehow. This is one way:
 
-
-    // need a secret to post (TIME_STREAM_SECRET environment variable)
-    app.use((req, res, next) => {
-      if (req.method !== 'POST') return next()
-      const authHeader = req.get('Authorization')
-      if (authHeader) {
-        const secret = authHeader.split(' ')[1]
-        if (secret === process.env.TIME_STREAM_SECRET) {
-          return next()
-        }
-      }
-      return res.status(401).send('Not authorized')
-    })
+```javascript
+// need a secret to post (TIME_STREAM_SECRET environment variable)
+app.use((req, res, next) => {
+  if (req.method !== 'POST') return next()
+  const authHeader = req.get('Authorization')
+  if (authHeader) {
+    const secret = authHeader.split(' ')[1]
+    if (secret === process.env.TIME_STREAM_SECRET) {
+      return next()
+    }
+  }
+  return res.status(401).send('Not authorized')
+})
+```
 
 ## Using the file store
 
 You can also use the file store directly.
 
-    const { FileStore } = require('time-streams')
+```javascript
+const { FileStore } = require('time-streams')
 
-    const stream = new FileStore('posts')
+const stream = new FileStore('posts')
 
-    stream.save({
-      body: 'test-message',
-      contentType: 'text/plain'
-    })
+stream.save({
+  body: 'test-message',
+  contentType: 'text/plain'
+})
+```
