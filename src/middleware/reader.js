@@ -11,7 +11,7 @@ dayjs.extend(utc)
 
 const TIME_STREAMS_VERSION = '1'
 
-function readerMiddleware(basePath) {
+function readerMiddleware(basePath, { getTimeStreamBasePath }={}) {
 
   const router = express.Router()
 
@@ -20,6 +20,50 @@ function readerMiddleware(basePath) {
     exposedHeaders: ['Link', 'Time-Streams-Version', 'Post-Time']
   }))
 
+  if (!getTimeStreamBasePath) getTimeStreamBasePath = (req, filePath) => {
+    req._timestreamBasePath
+  }
+
+  async function sendStreamFile(req, res, file, stream) {
+    if (file) {
+      res.set('Content-Type', file.contentType)
+      res.set('Post-Time', file.date.toUTCString())
+      if (file.contentLength) {
+        res.set('Content-Length', file.contentLength)
+      }
+      if (file.lastModified) {
+        res.set('Last-Modified', file.lastModified.toUTCString())
+      }
+      res.set('Time-Streams-Version', TIME_STREAMS_VERSION)
+      if (file.etag) res.set('ETag', file.etag)
+
+      const previousFile = await stream.getPrevious(file.id)
+
+      const tsBasePath = getTimeStreamBasePath(req)
+
+      var link = new LinkHeader()
+      link.set({
+        rel: 'self',
+        uri: file.pathname.slice(tsBasePath.length)
+      })
+      if (previousFile) {
+        link.set({
+          rel: 'previous',
+          uri: previousFile.pathname.slice(tsBasePath.length)
+        })
+      }
+      res.set('Link', link.toString())
+
+      if (req.get('If-None-Match') && req.get('if-none-match') === file.etag) {
+        return res.status(304).send()
+      }
+      const fileStream = file.getStream()
+      fileStream.on('end', () => res.end())
+      fileStream.pipe(res)
+    } else {
+      res.status(404).send('Not Found')
+    }
+  }
 
   router.use(async (req, res, next) => {
     if (req.method !== 'GET') return next()
@@ -45,45 +89,6 @@ function readerMiddleware(basePath) {
   })
 
   return router
-}
-
-async function sendStreamFile(req, res, file, stream) {
-  if (file) {
-    res.set('Content-Type', file.contentType)
-    res.set('Post-Time', file.date.toUTCString())
-    if (file.contentLength) {
-      res.set('Content-Length', file.contentLength)
-    }
-    if (file.lastModified) {
-      res.set('Last-Modified', file.lastModified.toUTCString())
-    }
-    res.set('Time-Streams-Version', TIME_STREAMS_VERSION)
-    if (file.etag) res.set('ETag', file.etag)
-
-    const previousFile = await stream.getPrevious(file.id)
-
-    var link = new LinkHeader()
-    link.set({
-      rel: 'self',
-      uri: file.pathname.slice(req._timestreamBasePath.length)
-    })
-    if (previousFile) {
-      link.set({
-        rel: 'previous',
-        uri: previousFile.pathname.slice(req._timestreamBasePath.length)
-      })
-    }
-    res.set('Link', link.toString())
-
-    if (req.get('If-None-Match') && req.get('if-none-match') === file.etag) {
-      return res.status(304).send()
-    }
-    const fileStream = file.getStream()
-    fileStream.on('end', () => res.end())
-    fileStream.pipe(res)
-  } else {
-    res.status(404).send('Not Found')
-  }
 }
 
 function parseDate(val) {
