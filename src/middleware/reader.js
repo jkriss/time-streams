@@ -3,7 +3,11 @@ const LinkHeader = require('http-link-header')
 const URL = require('url')
 const express = require('express')
 const cors = require('cors')
+const dayjs = require('dayjs')
+const utc = require('dayjs/plugin/utc')
 const { findStream } = require('./shared')
+
+dayjs.extend(utc)
 
 const TIME_STREAMS_VERSION = '1'
 
@@ -85,7 +89,7 @@ async function sendStreamFile(req, res, file, stream) {
 function parseDate(val) {
   if (!val) return undefined
   if (val.match(/^\d+$/)) val = parseInt(val)
-  return new Date(val)
+  return new dayjs.utc(val).toDate()
 }
 
 module.exports = readerMiddleware
