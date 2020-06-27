@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8">
     <title>form test</title>
+    <script src="client.js" charset="utf-8"></script>
   </head>
   <body>
     <div id="feed">
@@ -10,118 +11,23 @@
     <script type="text/javascript">
       (async function(){
 
-        const CRLF = '\r\n'
-
         const el = document.querySelector('#feed')
-        const res = await fetch('/posts')
 
-        const contentType = res.headers.get('content-type')
-        const m = contentType.match(/multipart\/form-data; boundary=(.+)$/)
-        const boundary = m[1]
-        // console.log("boundary:", boundary)
-        const bytesBoundary = new TextEncoder('ascii').encode(CRLF+'--'+boundary+CRLF)
-        const endBytes = new TextEncoder('ascii').encode(CRLF+'--'+boundary+'--')
-        const doubleBreak = new TextEncoder('ascii').encode(CRLF+CRLF)
-
-        // keep a list of http responses?
-        const responses = []
-
-        function boundaryAtIndex(array, bytesBoundary, idx) {
-          for (let i=0; i<bytesBoundary.length; i++) {
-            if (array[idx+i] !== bytesBoundary[i]) return false
-          }
-          return true
-        }
-
-        function getBoundaryIndexes(array, bytesBoundary) {
-          const indexes = []
-          for (let i=0; i<array.length-bytesBoundary.length; i++) {
-            // console.log("looking for boundary at", i)
-            if (boundaryAtIndex(array, bytesBoundary, i)) indexes.push(i)
-          }
-          return indexes
-        }
-
-        function parseHeaders(headers) {
-          const h = {}
-          for (const line of headers.split(CRLF)) {
-            const idx = line.indexOf(': ')
-            const key = line.slice(0, idx)
-            const val = line.slice(idx+2, line.length)
-            h[key.toLowerCase()] = val
-          }
-          return h
-        }
-
-        const reader = res.body.getReader()
-        let finished = false
-        const chunks = []
-        while (!finished) {
-          const { done, value } = await reader.read()
-          // console.log("value:", value)
-          if (value) chunks.push(value)
-          finished = done
-        }
-
-        const blob = new Blob(chunks)
-        const buffer = await blob.arrayBuffer()
-        const value = new Uint8Array(buffer)
-        // console.log("all chunks", value)
-
-        const boundaryIndexes = getBoundaryIndexes(value, bytesBoundary)
-        // const endBoundary = getBoundaryIndexes(value, endBytes)[0]
-        console.log("boundaries found at", boundaryIndexes)//, "end at", endBoundary)
-        // boundaryIndexes.push(endBoundary)
-        // split at all boundaries
-        do {
-          const endIndex = boundaryIndexes[1] ? boundaryIndexes[0] : value.length-endBytes.length
-          console.log("endIndex", endIndex)
-          const entry = value.slice(boundaryIndexes.shift()+bytesBoundary.length, boundaryIndexes[0]-CRLF.length)
-          if (entry.length === 0) {
-            // console.log("end of body")
-          } else {
-            const firstLineBreak = getBoundaryIndexes(entry, doubleBreak)[0]
-            const headers = parseHeaders(new TextDecoder("utf-8").decode(entry.slice(0, firstLineBreak)))
-            // console.log("headers:", headers)
-            const type = headers['content-type']
-            const body = entry.slice(firstLineBreak+doubleBreak.length, entry.length)
-            if (type.includes('text')) {
-              const text = new TextDecoder("utf-8").decode(body)
-              console.log("body text:", JSON.stringify(text))
-              responses.push(Object.assign(headers, { text }))
-            } else {
-              const url = URL.createObjectURL(new Blob([body]))
-              responses.push(Object.assign(headers, { url }))
-            }
-          }
-
-        } while (boundaryIndexes[0])
+        const responses = await TimeStreams.getBulk('/posts')
 
         for (const p of responses) {
-          const type = p['content-type']
-          const date = p['post-time']
+          const type = p.headers.get('content-type')
+          const date = p.headers.get('post-time')
+          const links = TimeStreams.parseLinkHeader(p.headers.get('link'))
+          console.log("links:", links)
           if (type.includes('text')) {
-            el.innerHTML += `<div>${p.text} - ${date}</div>`
+            const text = await p.text()
+            el.innerHTML += `<div>${text} - ${date}</div>`
           } else if (type.includes('image')) {
-            el.innerHTML += `<div><img style="max-width:200px" src="${p.url}">  - ${date}</div>`
+            const url = URL.createObjectURL(await p.blob())
+            el.innerHTML += `<div><img style="max-width:200px" src="${url}">  - ${date}</div>`
           }
         }
-
-
-        //// this works, but no way to get the per-entry headers
-
-        // const form = await res.formData()
-        // console.log("form:", form)
-        // for (const [name, f] of form) {
-        //   console.log("form entry:", f)
-        //   if (f.type.includes('text')) {
-        //     const text = await f.text()
-        //     el.innerHTML += `<div>${text}</div>`
-        //   } else if (f.type.includes('image')) {
-        //     const url = URL.createObjectURL(f)
-        //     el.innerHTML += `<div><img style="max-width:200px" src="${url}"></div>`
-        //   }
-        // }
       })()
     </script>
   </body>

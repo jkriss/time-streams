@@ -45,11 +45,10 @@ async function getForm() {
     }
 
     const headers = [
-      `Content-Disposition: form-data; name="${post.id}"; filename="${path.basename(post._.filename)}"`,
+      `Content-Disposition: form-data; name="${post.id}""`,
       `Content-Type: ${post.contentType}`,
       `Known-Length: ${post.contentLength}`,
       `Post-Time: ${post.date.toUTCString()}`,
-      `Time-Streams-Version: 1`,
       `Link: ${link.toString()}`
     ]
 
@@ -60,7 +59,7 @@ async function getForm() {
     form.append(post.id, post.getStream(), options)
     count++
     post = previous
-  } while (count < max && post)
+  } while (count <= max && post)
 
   return form
 }
@@ -69,6 +68,7 @@ const app = express()
 
 app.get('/posts', async (req, res) => {
   const form = await getForm()
+  res.set('Time-Streams-Version', 1)
   res.set(form.getHeaders())
   form.pipe(res)
 })
