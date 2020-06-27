@@ -1,8 +1,15 @@
 const fs = require('fs-extra')
 const path = require('path')
+const URL = require('url')
 const Store = require('../file-store')
 
 const SUFFIX = '.timestream'
+
+function getURI(req, { stream, post }) {
+  const reqPath = URL.parse(req.url).pathname
+  const streamName = path.basename(stream.root)
+  return reqPath.endsWith(streamName) ? [streamName, post.id].join('/') : post.id
+}
 
 async function findStream(basePath, url, req) {
   const isRoot = await fs.pathExists(path.join(basePath, url.pathname.slice(1)+SUFFIX))
@@ -38,5 +45,6 @@ async function findStream(basePath, url, req) {
 }
 
 module.exports = {
-  findStream
+  findStream,
+  getURI
 }

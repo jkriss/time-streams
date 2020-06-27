@@ -1,9 +1,11 @@
 const LinkHeader = require('http-link-header')
 const FormData = require('form-data')
+const { getURI } = require('./shared')
 
 const CRLF = '\r\n'
 
-async function getFormData({ stream, post, max=50 }) {
+
+async function getFormData(req, { stream, post, max=50 }) {
 
   const form = new FormData()
 
@@ -15,7 +17,7 @@ async function getFormData({ stream, post, max=50 }) {
 
     link.set({
       rel: 'self',
-      uri: post.id
+      uri: getURI(req, { stream, post })
     })
 
     const previous = await stream.getPrevious(post.id)
@@ -23,7 +25,7 @@ async function getFormData({ stream, post, max=50 }) {
     if (previous) {
       link.set({
         rel: 'previous',
-        uri: previous.id
+        uri: getURI(req, { stream, post: previous })
       })
     }
 

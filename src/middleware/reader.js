@@ -5,7 +5,7 @@ const express = require('express')
 const cors = require('cors')
 const dayjs = require('dayjs')
 const utc = require('dayjs/plugin/utc')
-const { findStream } = require('./shared')
+const { findStream, getURI } = require('./shared')
 const { getFormData } = require('./multipart')
 
 dayjs.extend(utc)
@@ -38,12 +38,12 @@ function readerMiddleware(basePath) {
       var link = new LinkHeader()
       link.set({
         rel: 'self',
-        uri: file.id
+        uri: getURI(req, { stream, post: file })
       })
       if (previousFile) {
         link.set({
           rel: 'previous',
-          uri: previousFile.id
+          uri: getURI(req, { stream, post: previousFile })
         })
       }
       res.set('Link', link.toString())
@@ -78,7 +78,7 @@ function readerMiddleware(basePath) {
           // send a multipart stream
           // TODO add an option for max items (via header?)
           const max = 50
-          const form = await getFormData({ stream, post, max })
+          const form = await getFormData(req, { stream, post, max })
 
           res.set(form.getHeaders())
           form.pipe(res)
