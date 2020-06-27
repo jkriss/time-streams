@@ -73,6 +73,7 @@ function readerMiddleware(basePath) {
       }
       if (post) {
         res.set('Time-Streams-Version', TIME_STREAMS_VERSION)
+        res.set('Vary', 'Accept')
 
         if (req.get('Accept') && req.get('Accept').includes('multipart/form-data')) {
           // send a multipart stream
