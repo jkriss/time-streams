@@ -23,7 +23,7 @@ async function getForm() {
 
   const form = new FormData()
 
-  const max = 2
+  const max = 50
   let count = 0
 
   do {
