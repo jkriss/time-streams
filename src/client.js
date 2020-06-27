@@ -64,7 +64,11 @@
   }
 
   async function getBulk(url) {
-    const res = await fetch(url)
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'multipart/form-data'
+      }
+    })
     const contentType = res.headers.get('content-type')
     const m = contentType.match(/multipart\/form-data; boundary=(.+)$/)
     const boundary = m[1]

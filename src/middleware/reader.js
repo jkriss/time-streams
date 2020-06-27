@@ -6,6 +6,7 @@ const cors = require('cors')
 const dayjs = require('dayjs')
 const utc = require('dayjs/plugin/utc')
 const { findStream } = require('./shared')
+const { getFormData } = require('./multipart')
 
 dayjs.extend(utc)
 
@@ -30,12 +31,9 @@ function readerMiddleware(basePath) {
       if (file.lastModified) {
         res.set('Last-Modified', file.lastModified.toUTCString())
       }
-      res.set('Time-Streams-Version', TIME_STREAMS_VERSION)
       if (file.etag) res.set('ETag', file.etag)
 
       const previousFile = await stream.getPrevious(file.id)
-
-      const tsBasePath = getTimeStreamBasePath(req)
 
       var link = new LinkHeader()
       link.set({
@@ -50,7 +48,7 @@ function readerMiddleware(basePath) {
       }
       res.set('Link', link.toString())
 
-      if (req.get('If-None-Match') && req.get('if-none-match') === file.etag) {
+      if (req.get('If-None-Match') && req.get('If-None-Match') === file.etag) {
         return res.status(304).send()
       }
       const fileStream = file.getStream()
@@ -74,7 +72,20 @@ function readerMiddleware(basePath) {
         post = await stream.before(parseDate(qs['before']))
       }
       if (post) {
-        sendStreamFile(req, res, post, stream)
+        res.set('Time-Streams-Version', TIME_STREAMS_VERSION)
+
+        if (req.get('Accept') && req.get('Accept').includes('multipart/form-data')) {
+          // send a multipart stream
+          // TODO add an option for max items (via header?)
+          const max = 50
+          const form = await getFormData({ stream, post, max })
+
+          res.set(form.getHeaders())
+          form.pipe(res)
+
+        } else {
+          sendStreamFile(req, res, post, stream)
+        }
       } else {
         next()
       }
