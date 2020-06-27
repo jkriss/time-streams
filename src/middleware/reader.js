@@ -11,7 +11,7 @@ dayjs.extend(utc)
 
 const TIME_STREAMS_VERSION = '1'
 
-function readerMiddleware(basePath, { getTimeStreamBasePath }={}) {
+function readerMiddleware(basePath) {
 
   const router = express.Router()
 
@@ -19,10 +19,6 @@ function readerMiddleware(basePath, { getTimeStreamBasePath }={}) {
     allowedHeaders: ['Authorization', 'If-None-Match'],
     exposedHeaders: ['Link', 'Time-Streams-Version', 'Post-Time']
   }))
-
-  if (!getTimeStreamBasePath) getTimeStreamBasePath = (req, filePath) => {
-    req._timestreamBasePath
-  }
 
   async function sendStreamFile(req, res, file, stream) {
     if (file) {
@@ -44,12 +40,12 @@ function readerMiddleware(basePath, { getTimeStreamBasePath }={}) {
       var link = new LinkHeader()
       link.set({
         rel: 'self',
-        uri: file.pathname.slice(tsBasePath.length)
+        uri: file.id
       })
       if (previousFile) {
         link.set({
           rel: 'previous',
-          uri: previousFile.pathname.slice(tsBasePath.length)
+          uri: previousFile.id
         })
       }
       res.set('Link', link.toString())
@@ -77,7 +73,6 @@ function readerMiddleware(basePath, { getTimeStreamBasePath }={}) {
       } else {
         post = await stream.before(parseDate(qs['before']))
       }
-      req._timestreamBasePath = basePath === '.' ? '' : basePath
       if (post) {
         sendStreamFile(req, res, post, stream)
       } else {
